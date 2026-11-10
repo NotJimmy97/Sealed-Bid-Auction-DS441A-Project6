@@ -1,0 +1,25 @@
+{
+  "name": "sealed-bid-auction",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Project 6 (Team 21) - Commit-Reveal Sealed-Bid Auction vs English Auction on Ganache",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "gas": "REPORT_GAS=true hardhat test",
+    "node": "ganache --chain.chainId 1337 --wallet.deterministic --wallet.totalAccounts 6",
+    "deploy:ganache": "hardhat run scripts/deploy.js --network ganache",
+    "demo": "hardhat run scripts/demo-scenario.js --network ganache",
+    "frontend": "npx -y http-server frontend -c-1 -p 5173"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "ganache": "^7.9.2",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  }
+}
