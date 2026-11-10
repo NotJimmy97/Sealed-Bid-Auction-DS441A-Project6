@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sealed-Bid Auction · Team 21</title>
+  <meta name="description" content="DApp đấu giá kín Commit-Reveal trên Ganache: commit hash, reveal, withdraw, quản trị và nhật ký sự kiện thời gian thực." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5e41'/%3E%3Cpath d='M9 21h14v2H9zm2.5-3.5L18 11l2.5 2.5-6.5 6.5H11.5z' fill='%23f6f4ef'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div class="brand-text">
+        <span class="brand-title">Sealed-Bid Auction</span>
+        <span class="brand-sub">Team 21 · Commit-Reveal Protocol</span>
+      </div>
+    </div>
+    <div class="wallet">
+      <span id="network-status" class="pill pill-muted">Chưa kết nối</span>
+      <span id="role-badge" class="pill pill-muted">Chưa chọn vai trò</span>
+      <span id="wallet-address" class="mono">—</span>
+      <select id="role-selector" aria-label="Chọn vai trò ví Ganache">
+        <option value="0">Role 0 · Owner / Beneficiary (Auctioneer)</option>
+        <option value="1">Role 1 · Bidder A (Standard)</option>
+        <option value="2">Role 2 · Bidder B (Standard)</option>
+        <option value="3">Role 3 · Bidder C / Guest (Restricted)</option>
+      </select>
+      <button id="btn-connect" class="btn btn-primary" type="button">Kết nối MetaMask</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-eyebrow">ETHEREUM SMART CONTRACT · SOLIDITY 0.8.24 · PULL-PAYMENT</div>
+      <h1>Đấu giá kín hai pha Commit-Reveal</h1>
+      <p class="muted">Giá thật được phong bì mật mã ngoài chuỗi bằng hàm băm <code>keccak256(value, secret, bidder, auction)</code> cho tới pha Reveal. Lưu secret cẩn thận — mất secret đồng nghĩa mất cọc.</p>
+    </section>
+
+    <section class="card status" aria-label="Trạng thái phiên">
+      <div class="stat-item">
+        <div class="label">Pha hiện tại</div>
+        <div id="phase-label" class="phase">Bidding</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Thời gian còn lại</div>
+        <div id="countdown" class="mono big">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Giá cao nhất đã reveal</div>
+        <div id="highest-bid" class="mono big">0.0 ETH</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Người dẫn đầu</div>
+        <div id="highest-bidder" class="mono small">Chưa có (0x0)</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Cọc chưa mở (Unrevealed)</div>
+        <div id="unrevealed-deposits" class="mono small">0.0 ETH</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Trạng thái cam kết của bạn</div>
+        <div id="my-bid-status" class="mono small">Chưa có cam kết (0 ETH)</div>
+      </div>
+      <div class="stat-item stat-wide">
+        <div class="label">Địa chỉ hợp đồng (SealedBidAuction)</div>
+        <div id="contract-address" class="mono small">—</div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="commit-title">
+        <h2 id="commit-title">1 · Commit (Nộp cam kết kín)</h2>
+        <label for="commit-value">Giá bid thật (ETH)</label>
+        <input id="commit-value" type="number" min="0" step="0.001" placeholder="1.5" />
+        <label for="commit-deposit">Tiền cọc gửi kèm (ETH, ≥ giá bid; lớn hơn để che giá)</label>
+        <input id="commit-deposit" type="number" min="0" step="0.001" placeholder="3.0" />
+        <label for="commit-secret">Secret ngẫu nhiên (bytes32)</label>
+        <div class="row">
+          <input id="commit-secret" class="mono" type="text" placeholder="0x…" spellcheck="false" />
+          <button id="btn-generate-secret" class="btn" type="button">Tạo</button>
+        </div>
+        <label>Commitment Hash (tính ngoài chuỗi)</label>
+        <output id="commit-hash" class="mono hash">—</output>
+        <div class="row">
+          <button id="btn-commit" class="btn btn-primary" type="button">Gửi commit</button>
+          <button id="btn-download-secret" class="btn" type="button">Tải file secret</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="reveal-title">
+        <h2 id="reveal-title">2 · Reveal (Mở giá công khai)</h2>
+        <label for="reveal-value">Giá bid đã cam kết (ETH)</label>
+        <input id="reveal-value" type="number" min="0" step="0.001" placeholder="1.5" />
+        <label for="reveal-secret">Secret (bytes32)</label>
+        <input id="reveal-secret" class="mono" type="text" placeholder="0x…" spellcheck="false" />
+        <div class="row">
+          <button id="btn-reveal" class="btn btn-primary" type="button">Reveal</button>
+          <button id="btn-load-secret" class="btn" type="button">Điền từ bản lưu</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="withdraw-title">
+        <h2 id="withdraw-title">3 · Kết thúc &amp; Rút tiền</h2>
+        <div class="label">Số dư chờ rút (pendingReturns)</div>
+        <div id="pending-returns" class="mono big">0.0 ETH</div>
+        <p class="card-note">Áp dụng mẫu thiết kế Pull-Payment (CEI + <code>nonReentrant</code>): người bị vượt giá, người thắng hoàn cọc dư và Beneficiary tự rút tiền an toàn.</p>
+        <div class="row">
+          <button id="btn-withdraw" class="btn btn-primary" type="button">Withdraw</button>
+          <button id="btn-auction-end" class="btn" type="button">auctionEnd()</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="card admin-card" aria-labelledby="admin-title">
+      <div class="admin-header">
+        <h2 id="admin-title">4 · Quản trị Hợp đồng &amp; Tua Thời gian Demo (Local Ganache / Hardhat)</h2>
+        <p class="card-note">Các hàm quản trị yêu cầu quyền <code>onlyOwner</code> (Role 0). Bộ tua thời gian gửi lệnh <code>evm_increaseTime</code> + <code>evm_mine</code> trực tiếp tới nút RPC cục bộ để kiểm thử chuyển pha.</p>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-group">
+          <div class="label">Quản trị khẩn cấp (Owner Access Control)</div>
+          <div class="row">
+            <button id="btn-pause" class="btn" type="button">Tạm dừng · pause()</button>
+            <button id="btn-unpause" class="btn" type="button">Tiếp tục · unpause()</button>
+            <button id="btn-cancel" class="btn btn-danger" type="button">Hủy phiên · cancelAuction()</button>
+          </div>
+        </div>
+        <div class="admin-group">
+          <div class="label">Điều khiển pha thời gian (Local RPC Time-Travel)</div>
+          <div class="row">
+            <button id="btn-advance-reveal" class="btn" type="button">Tua tới Pha Reveal</button>
+            <button id="btn-advance-end" class="btn" type="button">Tua tới Pha Ended</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="log-title">
+      <h2 id="log-title">5 · Nhật ký sự kiện thời gian thực (On-Chain Events)</h2>
+      <ol id="event-log" class="log"><li class="empty">Chưa có sự kiện.</li></ol>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
