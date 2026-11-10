@@ -1,0 +1,28 @@
+Compiled 10 Solidity files successfully (evm target: paris).
+auctioneer 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+bidderA    0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+bidderB    0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+bidderC    0x90F79bf6EB2c4f870365E785982E1f101E93b906
+
+[1] SealedBidAuction deployed at 0x5FbDB2315678afecb367f032d93F642f64180aa3 (phase=0)
+[2] bidderA (0x709979) commit 0xb42d4d48f4... deposit 1.0 ETH
+[2] bidderB (0x3C44Cd) commit 0x204477c51e... deposit 3.0 ETH
+[2] bidderC (0x90F79b) commit 0x80945ba0bd... deposit 2.0 ETH
+    -> Contract balance = 6.0 ETH, unrevealedDeposits = 6.0 ETH
+
+[3] phase = 1 (1 = Reveal)
+    [3a] bidderA revealed 1.0 ETH -> highestBid = 1.0 ETH
+    [3b] bidderC fraudulent reveal blocked as expected (VM Exception while processing transaction: reverted with custom error 'InvalidReveal()')
+    [3c] bidderB revealed 1.5 ETH -> highestBidder = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, highestBid = 1.5 ETH
+    [3d] bidderC did not reveal before deadline -> unrevealedDeposits = 2.0 ETH (to be forfeited)
+
+[4] phase = 2 (2 = Ended)
+    auctionEnd() finalized: winner = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, winningBid = 1.5 ETH
+    pendingReturns: bidderA = 1.0 ETH, bidderB = 1.5 ETH, beneficiary = 3.5 ETH
+
+[5] Pulling refunds & payout via withdraw():
+    - bidderA (loser refund): withdrew 1.0 ETH (net before gas: 1.0 ETH)
+    - bidderB (excess deposit): withdrew 1.5 ETH (net before gas: 1.5 ETH)
+    - auctioneer (winning bid + forfeited deposit): withdrew 3.5 ETH (net before gas: 3.5 ETH)
+
+[6] Invariants verified: contractBalance = 0.0 ETH, unrevealedDeposits = 0.0 ETH, ended = true

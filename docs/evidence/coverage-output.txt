@@ -1,0 +1,83 @@
+
+Version
+=======
+> solidity-coverage: v0.8.17
+
+Instrumenting for coverage...
+=============================
+
+> EnglishAuction.sol
+> SealedBidAuction.sol
+
+Coverage skipped for:
+=====================
+
+> interfaces/IAuction.sol
+> mocks/AuctionTestMocks.sol
+
+Compilation:
+============
+
+Compiled 10 Solidity files successfully (evm target: paris).
+
+Network Info
+============
+> HardhatEVM: v2.29.1
+> network:    hardhat
+
+
+
+  EnglishAuction
+    Deployment
+      ✔ TC-EN-00: khởi tạo owner, beneficiary, biddingEnd, minIncrement
+    Bidding
+      ✔ TC-EN-01: happy path A bid -> B outbid -> auctionEnd -> A withdraw, beneficiary withdraw (41ms)
+      ✔ TC-EN-02: bid < highestBid + minIncrement revert BidTooLow
+      ✔ TC-EN-03: người bị vượt giá rút lại tiền qua withdraw (pull-payment)
+      ✔ TC-EN-04: bid sau biddingEnd revert TooLate
+      ✔ TC-EN-05: auctionEnd lần 2 revert AuctionAlreadyEnded
+
+  SealedBidAuction
+    Deployment
+      ✔ TC-SB-00: khởi tạo owner, beneficiary, deadline và pha Bidding
+      ✔ TC-SB-00b: currentPhase chuyển Bidding -> Reveal -> Ended theo thời gian
+      ✔ TC-SB-00c: helper makeCommitment trả về bytes32 khác 0 và phụ thuộc bidder
+    Happy path
+      ✔ TC-SB-01: commit 3 bid -> reveal -> auctionEnd -> đúng winner -> losers & beneficiary withdraw (72ms)
+    Phase guards (AC-QA-02)
+      ✔ TC-SB-02: commitBid sau biddingEnd revert TooLate
+      ✔ TC-SB-03: revealBid trước biddingEnd revert TooEarly
+      ✔ TC-SB-04: auctionEnd trước revealEnd revert TooEarly
+      ✔ TC-SB-05: revealBid sau revealEnd revert TooLate
+    Fraudulent reveal (AC-QA-03)
+      ✔ TC-SB-06: reveal sai secret revert InvalidReveal
+      ✔ TC-SB-07: reveal sai value revert InvalidReveal
+      ✔ TC-SB-08: sao chép commitment của người khác -> reveal revert InvalidReveal
+      ✔ TC-SB-09: deposit < value revert InsufficientDeposit
+    Access control & withdrawal (AC-QA-04)
+      ✔ TC-SB-10: withdraw khi số dư 0 revert NothingToWithdraw
+      ✔ TC-SB-11: non-owner gọi pause/cancelAuction revert OwnableUnauthorizedAccount
+      ✔ TC-SB-12: commit lần 2 revert AlreadyCommitted
+      ✔ TC-SB-13: reveal lần 2 revert AlreadyRevealed
+      ✔ TC-SB-14: auctionEnd lần 2 revert AuctionAlreadyEnded
+    Edge cases
+      ✔ TC-SB-15: cọc chưa reveal bị tịch thu cho beneficiary khi auctionEnd
+      ✔ TC-SB-16: cancelAuction -> bidder rút lại toàn bộ cọc
+      ✔ TC-SB-17: paused chặn commitBid (EnforcedPause) nhưng withdraw vẫn chạy
+      ✔ TC-SB-18: hợp đồng tấn công reentrancy không rút được 2 lần (53ms)
+      ✔ TC-SB-19: bid bằng nhau -> người reveal trước giữ highestBid
+
+
+  28 passing (511ms)
+
+-----------------------|----------|----------|----------|----------|----------------|
+File                   |  % Stmts | % Branch |  % Funcs |  % Lines |Uncovered Lines |
+-----------------------|----------|----------|----------|----------|----------------|
+ contracts/            |      100 |      100 |      100 |      100 |                |
+  EnglishAuction.sol   |      100 |      100 |      100 |      100 |                |
+  SealedBidAuction.sol |      100 |      100 |      100 |      100 |                |
+-----------------------|----------|----------|----------|----------|----------------|
+All files              |      100 |      100 |      100 |      100 |                |
+-----------------------|----------|----------|----------|----------|----------------|
+
+> Istanbul reports written to ./coverage/ and ./coverage.json
